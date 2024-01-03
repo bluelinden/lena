@@ -9,6 +9,7 @@
 		"typescript": "^5.0.0"
 	},
 	"workspaces": [
-		"serialkit/*"
+		"serialkit/engine",
+		"serialkit/frontend"
 	]
 }

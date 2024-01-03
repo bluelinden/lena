@@ -1,0 +1,26 @@
+@mixin stdfont {
+	font-size: clamp(1rem, 3vw + 0.946rem, 2.4rem);
+	font-family: EB Garamond, Georgia, "Times New Roman", Times, serif;
+}
+
+@mixin stdhoverbutton {
+	background: #fff;
+	border: none;
+	cursor: pointer;
+	text-decoration-skip-ink: auto;
+	text-decoration-line: underline;
+	text-decoration-thickness: 0.07em;
+	text-underline-offset: 0.1em;
+	color: var(--color);
+	transition-property: text-underline-offset, text-shadow, var(--transition-properties);
+	transition-duration: 0.2s;
+	transition-timing-function: ease-in-out;
+	text-decoration-style: solid;
+	text-shadow: none;
+
+	&:hover, &:focus {
+		text-underline-offset: 0.2em;
+		text-decoration-thickness: 0.15em;
+		text-shadow: #0095 0 0 5px;
+	}
+}
