@@ -1,15 +1,16 @@
 {
-	"name": "serialkit",
-	"module": "serialkit.config.ts",
-	"type": "module",
-	"devDependencies": {
-		"bun-types": "latest"
-	},
-	"peerDependencies": {
-		"typescript": "^5.0.0"
-	},
-	"workspaces": [
-		"serialkit/engine",
-		"serialkit/frontend"
-	]
+  "name": "serialkit",
+  "module": "serialkit.config.ts",
+  "type": "module",
+  "devDependencies": {
+    "bun-types": "latest",
+    "vite-tsconfig-paths": "^4.2.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "workspaces": [
+    "serialkit/engine",
+    "serialkit/frontend"
+  ]
 }

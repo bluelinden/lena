@@ -2,11 +2,19 @@
 	export let group: string;
 	export let value: string;
 	export let id: string;
+
+	import { createEventDispatcher } from "svelte";
+	const dispatch = createEventDispatcher();
+
 </script>
 
 <li>
 	<label for={id}><slot>SerialKit: Option empty.</slot></label>
-	<input type="radio" name={group} {id} {value} on:change />
+	<input type="radio" name={group} {id} {value} on:change={
+		() => dispatch("change", {
+			value
+		})
+	} />
 </li>
 
 <style lang="scss">

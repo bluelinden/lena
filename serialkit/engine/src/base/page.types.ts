@@ -1,29 +1,42 @@
 export declare interface SKPageOutput {
 	on: SKOnEventDefinition;
 	navOptions: {
-		initiallyAllowPrevPage: boolean;
-		initiallyAllowNextPage: boolean;
+		allowNextPage: boolean;
+		allowPrevPage: boolean;
 	};
+
+	// here because of typescript quirkiness
 	nonActionReason?: undefined;
-	inputValues : Record<string, SKBooleanField | SKMultiField | SKStringField>;
+
+	inputDef?: SKListInputDef;
+
+	inputValues?: Record<
+		string,
+		string | number | boolean | Record<string, boolean>
+	>;
 	prevPage?: SKPageOutput;
 	nextPage?: SKPageOutput;
 	reevaluatePageDecisions?: boolean;
-	actions: SKActionDefinition[];
 	titleMarker: string;
 	content: string;
-	previousPage?: SKPageOutput;
 	passed?: boolean;
 }
 
-export type SKActionDefinition = {};
-
-export type SKInputListDefinition = {};
+export type SKListInputDef = {
+	group: string;
+	numbered: boolean;
+	content: {
+		id: string;
+		value: string;
+		label: string;
+	}[];
+};
 
 export type SKOnEventDefinition = {
-	pageNext: (ev: SKEventData) => SKPageOutput | SKPageNonActionReason;
-	pagePrev: (ev: SKEventData) => SKPageOutput | SKPageNonActionReason;
-	inputChange: (ev: SKEventData) => SKEventHandlerResponse;
+	pageNext?: (ev: SKEventData) => SKPageOutput | SKPageNonActionReason;
+	pagePrev?: (ev: SKEventData) => SKPageOutput | SKPageNonActionReason;
+	call?: (ev: SKEventData, page: SKPageOutput) => void;
+	inputChange?: (ev: SKEventData) => SKEventHandlerResponse;
 };
 
 export interface SKPageNonActionReason {
@@ -32,14 +45,26 @@ export interface SKPageNonActionReason {
 
 export interface SKEventHandlerResponse {
 	showNextButton: boolean;
-	showPreviousButton: boolean;
+	showPrevButton: boolean;
 }
 
 export interface SKEventData {
-	inputValues: Record<string, SKBooleanField | SKMultiField | SKStringField>;
+	inputValues: Record<
+		string,
+		string | number | boolean | Record<string, boolean>
+	>;
+	oldValue?: string | number | boolean | Record<string, boolean>;
 	event: {
-		type: "inputChange" | "nextPage" | "previousPage";
+		type: "inputChange" | "nextPage" | "previousPage" | "call";
 		fieldName?: string;
+	};
+}
+
+export interface SKCallEVentData extends SKEventData {
+	event: {
+		type: "call";
+		context: "fromNext" | "fromPrev";
+		priorPage: SKPageOutput;
 	};
 }
 

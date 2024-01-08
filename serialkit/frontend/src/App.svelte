@@ -1,53 +1,60 @@
 <script lang="ts">
 	import BottomNav from "./lib/gameplay/BottomNav.svelte";
-	import McOption from "./lib/gameplay/MCOption.svelte";
 	import McGroup from "./lib/gameplay/McGroup.svelte";
+	import type * as SKTypes from "engine/page.types";
+	import type { GameStator } from "engine/main";
+	import Markdown from "svelte-markdown";
 
-	let optionIsSelected = false;
+	export let stator: GameStator;
 
+	$: currentPage = stator.currentPage;
+
+	$: pageContent = currentPage.content;
+	$: pageTitle = currentPage.titleMarker;
+	$: showBackButton = currentPage.navOptions.allowPrevPage;
+	$: showNextButton = currentPage.navOptions.allowNextPage;
+	$: goToNextPage = stator.nextPage;
+	$: goToPrevPage = stator.prevPage;
+	$: multiChoiceQuestion = currentPage.inputDef;
+	$: inputValues = currentPage.inputValues;
+
+	stator.onPageChange((newPage) => {
+		currentPage = newPage;
+	});
 </script>
 
 <svelte:head>
-	<title>SerialKit</title>
+	<title>{currentPage.titleMarker}</title>
 </svelte:head>
 
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="true" />
-
-
 <main>
-	<p>
-		Simple design. Simple gameplay. No need to learn the controls. Accessible
-		out of the box. Lightweight. Easy to develop for. It's called SerialKit.
-		Developed by blue linden in 2024.
-	</p>
-	<p>I will...</p>
-	<McGroup
-		group="controls"
-		isNumbered={true}
-		on:change={(event) => {
-			optionIsSelected = true;
-		}}
-		options={[
-			{
-				id: "play-game",
-				value: "play",
-				label: "Play a game",
-			},
-			{
-				id: "read-docs",
-				value: "docs",
-				label: "Read the docs",
-			},
-			{
-				id: "make-own",
-				value: "make",
-				label: "Make my own game",
-			}
-		]}
-	/>
+	<Markdown source={currentPage.content} />
+	{#if multiChoiceQuestion}
+		<McGroup
+			group={multiChoiceQuestion?.group ?? "group"}
+			isNumbered={multiChoiceQuestion?.numbered}
+			options={multiChoiceQuestion?.content ?? []}
+			on:change={(e) => {
+				stator.callInputChange(e.detail.group, e.detail.value);
+				currentPage = currentPage;
+				return;
+			}}
+		/>
+	{/if}
 </main>
-<BottomNav showBack={!optionIsSelected} showNext={optionIsSelected} pageTitle="Gameplay" />
+<BottomNav
+	on:back={() => {
+		goToPrevPage();
+		currentPage = currentPage;
+	}}
+	on:next={() => {
+		goToNextPage();
+		currentPage = currentPage;
+	}}
+	showBack={showBackButton}
+	showNext={showNextButton}
+	{pageTitle}
+/>
 
 <style>
 	main {
