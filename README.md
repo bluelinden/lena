@@ -8,7 +8,7 @@ Pages are objects, and everything else is a function. There is no hierarchy the 
 
 Just have your entrypoint in the `game/main.ts` file, and link your other pages via standard imports, and SerialKit will follow the objects wherever they lead.
 
-Read the type definitions in `src/engine/base/page.types.ts` to learn how to use them in your game.
+Read the type definitions in `serialkit/engine/base/page.types.ts` to learn how to use them in your game.
 
 Run `bun run build` to build the game.
 Run `bun run dev` to start the game in a live environment.
