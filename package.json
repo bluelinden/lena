@@ -3,8 +3,8 @@
   "module": "serialkit.config.ts",
   "type": "module",
   "scripts": {
-	  "dev": "vite dev src/frontend",
-	  "build": "vite build src/frontend && mkdir -p dist && rm -rf dist/* && mv -f src/frontend/dist/* ./dist"
+	  "dev": "vite dev serialkit/frontend",
+	  "build": "vite build serialkit/frontend && mkdir -p dist && rm -rf dist/* && mv -f serialkit/frontend/dist/* ./dist"
   },
   "devDependencies": {
     "bun-types": "latest",
