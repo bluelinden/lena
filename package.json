@@ -22,8 +22,6 @@
 	 "./utils/storage": "./serialkit/utils/src/storage.ts"
   },
   "workspaces": [
-    "serialkit/engine",
-    "serialkit/frontend",
-	 "serialkit/utils"
+    "serialkit/*"
   ]
 }
