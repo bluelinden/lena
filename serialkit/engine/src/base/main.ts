@@ -9,6 +9,7 @@ export class GameStator {
 	}
 	#pages: Record<string, SKPageTypes.SKPageOutput> = {};
 	#currentPage: SKPageTypes.SKPageOutput = {
+		id: "sk_default",
 		content: `You've initialized SerialKit's base framework, at ${new Date().toLocaleTimeString()}, but no page has been loaded *yet.*`,
 		on: {
 			pageNext: () => {
