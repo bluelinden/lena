@@ -6,7 +6,7 @@ Tell complex, non-linear stories with an extremely opinionated game framework th
 
 Pages are objects, and everything else is a function. There is no hierarchy the engine forces on you, all you need is a function for the "next" button and one for the "back" button, and you're good to go.
 
-Just have your entrypoint in the `main.ts` file, and link your other pages, and SerialKit will follow the objects wherever they lead.
+Just have your entrypoint in the `game/main.ts` file, and link your other pages via standard imports, and SerialKit will follow the objects wherever they lead.
 
 Read the type definitions in `src/engine/base/page.types.ts` to learn how to use them in your game.
 

@@ -16,10 +16,12 @@
 		"types": [
 			"bun-types" // add Bun global
 		],
+		
 		"paths": {
-			"utils/*": ["./src/utils/src/*"],
-			"frontend/*": ["./src/frontend/src/*"],
-			"engine/*": ["./src/engine/src/*"]
+			"utils/*": ["./serialkit/utils/src/*"],
+			"frontend/*": ["./serialkit/frontend/src/*"],
+			"engine/*": ["./serialkit/engine/src/*"]
 		}
-	}
+	},
+	"include": ["serialkit/**/*.ts", "serialkit/**/*.js", "game/**/*.ts", "game/**/*.js", "serialkit/**/*.svelte"],
 }

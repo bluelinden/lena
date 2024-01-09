@@ -14,12 +14,12 @@
     "typescript": "^5.0.0"
   },
   "exports": {
-	 ".": "./src",
-	 "./engine": "./src/engine",
-	 "./frontend": "./src/frontend",
-	 "./utils": "./src/utils",
-	 "./utils/random-choice": "./src/utils/src/random-choice.ts",
-	 "./utils/storage": "./src/utils/src/storage.ts"
+	 ".": "./serialkit",
+	 "./engine": "./serialkit/engine",
+	 "./frontend": "./serialkit/frontend",
+	 "./utils": "./serialkit/utils",
+	 "./utils/random-choice": "./serialkit/utils/src/random-choice.ts",
+	 "./utils/storage": "./serialkit/utils/src/storage.ts"
   },
   "workspaces": [
     "src/engine",
