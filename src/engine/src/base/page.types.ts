@@ -25,7 +25,7 @@ export declare interface SKPageOutput {
 export type SKListInputDef = {
 	group: string;
 	numbered: boolean;
-	content: {
+	content: () => {
 		id: string;
 		value: string;
 		label: string;

@@ -15,6 +15,11 @@
 		"allowJs": true,
 		"types": [
 			"bun-types" // add Bun global
-		]
+		],
+		"paths": {
+			"utils/*": ["./src/utils/src/*"],
+			"frontend/*": ["./src/frontend/src/*"],
+			"engine/*": ["./src/engine/src/*"]
+		}
 	}
 }

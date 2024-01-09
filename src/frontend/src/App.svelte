@@ -33,7 +33,7 @@
 		<McGroup
 			group={multiChoiceQuestion?.group ?? "group"}
 			isNumbered={multiChoiceQuestion?.numbered}
-			options={multiChoiceQuestion?.content ?? []}
+			options={multiChoiceQuestion?.content() ?? []}
 			on:change={(e) => {
 				stator.callInputChange(e.detail.group, e.detail.value);
 				currentPage = currentPage;

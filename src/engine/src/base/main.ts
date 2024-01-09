@@ -3,7 +3,7 @@ import { marked } from "marked";
 
 export class GameStator {
 	constructor(page?: SKPageTypes.SKPageOutput) {
-		if (page) {
+		if (page && Object.keys(page).length > 0) {
 			this.#currentPage = page;
 		}
 	}
@@ -53,7 +53,7 @@ export class GameStator {
 		inputDef: {
 			group: "SerialKitDefault",
 			numbered: true,
-			content: [
+			content: () => [
 				{
 					id: "opt1",
 					value: "igmo",

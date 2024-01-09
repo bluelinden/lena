@@ -2,6 +2,10 @@
   "name": "serialkit",
   "module": "serialkit.config.ts",
   "type": "module",
+  "scripts": {
+	  "dev": "vite dev src/frontend",
+	  "build": "vite build src/frontend && mkdir -p dist && rm -rf dist/* && mv -f src/frontend/dist/* ./dist"
+  },
   "devDependencies": {
     "bun-types": "latest",
     "vite-tsconfig-paths": "^4.2.3"
@@ -9,8 +13,17 @@
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
+  "exports": {
+	 ".": "./src",
+	 "./engine": "./src/engine",
+	 "./frontend": "./src/frontend",
+	 "./utils": "./src/utils",
+	 "./utils/random-choice": "./src/utils/src/random-choice.ts",
+	 "./utils/storage": "./src/utils/src/storage.ts"
+  },
   "workspaces": [
-    "serialkit/engine",
-    "serialkit/frontend"
+    "src/engine",
+    "src/frontend",
+	 "src/utils"
   ]
 }
