@@ -7,6 +7,7 @@ export class GameStator {
 			this.#currentPage = page;
 		}
 	}
+	#pages: Record<string, SKPageTypes.SKPageOutput> = {};
 	#currentPage: SKPageTypes.SKPageOutput = {
 		content: `You've initialized SerialKit's base framework, at ${new Date().toLocaleTimeString()}, but no page has been loaded *yet.*`,
 		on: {
@@ -168,17 +169,18 @@ export class GameStator {
 
 			if (pageOutput) {
 				// what type is pageOutput?
-				switch (true) {
-					// page output is a non action reason... aw man
-					case typeof pageOutput.nonActionReason === "string":
-						this.showPageValidationAlert(pageOutput.nonActionReason);
-						break;
-					// page output is a page!! yay!
-					case !pageOutput.nonActionReason:
-						if (currentPage) currentPage.nextPage = pageOutput;
-						pageOutput.prevPage = currentPage;
-						this.currentPage = pageOutput;
-						break;
+				if (("id" in pageOutput) && !("titleMarker" in pageOutput)) {
+					// page output is a page reference!! yay!
+					const oldPage = this.currentPage;
+					this.currentPage = this.#pages[pageOutput.id];
+					this.currentPage[pageDirection === "next" ? "nextPage" : "prevPage"] = oldPage;
+				} else if (("nonActionReason" in pageOutput)) {
+					// page output is a page object
+					alert(pageOutput.nonActionReason);
+				} else {
+					const oldPage = this.currentPage;
+					this.currentPage = pageOutput as SKPageTypes.SKPageOutput;
+					this.currentPage[pageDirection === "next" ? "nextPage" : "prevPage"] = oldPage;
 				}
 			}
 		}
@@ -190,5 +192,9 @@ export class GameStator {
 
 	nextPage = () => {
 		this.#callDirectionalPage("next");
+	};
+
+	registerPage = (page: SKPageTypes.SKPageOutput) => {
+		this.#pages[page.id] = page;
 	};
 }
