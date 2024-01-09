@@ -5,9 +5,6 @@ export declare interface SKPageOutput {
 		allowPrevPage: boolean;
 	};
 
-	// here because of typescript quirkiness
-	nonActionReason?: undefined;
-
 	inputDef?: SKListInputDef;
 
 	inputValues?: Record<
@@ -20,6 +17,11 @@ export declare interface SKPageOutput {
 	titleMarker: string;
 	content: string;
 	passed?: boolean;
+	id: string;
+}
+
+export interface SKPageRef {
+	id: string;
 }
 
 export type SKListInputDef = {
@@ -33,9 +35,8 @@ export type SKListInputDef = {
 };
 
 export type SKOnEventDefinition = {
-	pageNext?: (ev: SKEventData) => SKPageOutput | SKPageNonActionReason;
-	pagePrev?: (ev: SKEventData) => SKPageOutput | SKPageNonActionReason;
-	call?: (ev: SKEventData, page: SKPageOutput) => void;
+	pageNext?: (ev: SKEventData) => SKPageOutput | SKPageNonActionReason | SKPageRef;
+	pagePrev?: (ev: SKEventData) => SKPageOutput | SKPageNonActionReason | SKPageRef;
 	inputChange?: (ev: SKEventData) => SKEventHandlerResponse;
 };
 
