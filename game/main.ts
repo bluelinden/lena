@@ -2,17 +2,21 @@
 
 
 import type { SKPageOutput } from "engine/base/page.types";
+import { GameStator } from "engine/base/main";
 import Intro from "./intro";
 
+
 const game: SKPageOutput = {
+	id: "initiation",
+
 	get content() {
-		return `Published by *blue linden software*.
+		return `Engineering and writing by blue linden.
 	
-Inspired by *The Donut Shop*.
+Inspired by *Go Buy a Donut: The Compelling Experience* by Mayeda Alom.
 
 Welcome to *Lena.*
 
-**Warning:** This game is not intended for young children or anyone on unstable mental grounds. This game is designed to mess with you on a very deep level. If you can't handle that, please don't play it.`;
+**Warning:** This game is not intended for children, nor for anyone easily disturbed. It's not like I can stop you from playing it, but if you don't think you can handle it then please don't play it.`;
 	},
 	navOptions: {
 		allowNextPage: true,
@@ -27,4 +31,6 @@ Welcome to *Lena.*
 
 };
 
-export default game;
+const stator = new GameStator(game);
+export default stator;
+

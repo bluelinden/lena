@@ -15,8 +15,11 @@
 	$: showNextButton = currentPage.navOptions.allowNextPage;
 	$: goToNextPage = stator.nextPage;
 	$: goToPrevPage = stator.prevPage;
-	$: multiChoiceQuestion = currentPage.inputDef;
-	$: inputValues = currentPage.inputValues;
+	$: multiChoiceQuestion = currentPage.inputDef as SKTypes.SKListInputDef | undefined;
+
+	$: inputValues = currentPage.inputValues as Record<string, string>;
+
+	$: console.log(inputValues)
 
 	stator.onPageChange((newPage) => {
 		currentPage = newPage;
@@ -29,11 +32,12 @@
 
 <main>
 	<Markdown source={currentPage.content} />
-	{#if multiChoiceQuestion}
+	{#if multiChoiceQuestion && multiChoiceQuestion.group}
 		<McGroup
-			group={multiChoiceQuestion?.group ?? "group"}
+			group={multiChoiceQuestion.group}
 			isNumbered={multiChoiceQuestion?.numbered}
-			options={multiChoiceQuestion?.content() ?? []}
+			options={multiChoiceQuestion.content() ?? []}
+			value={(inputValues?.[multiChoiceQuestion.group ?? ""]) ?? ""}
 			on:change={(e) => {
 				stator.callInputChange(e.detail.group, e.detail.value);
 				currentPage = currentPage;

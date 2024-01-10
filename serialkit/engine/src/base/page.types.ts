@@ -45,8 +45,8 @@ export interface SKPageNonActionReason {
 }
 
 export interface SKEventHandlerResponse {
-	showNextButton: boolean;
-	showPrevButton: boolean;
+	showNextButton?: boolean;
+	showPrevButton?: boolean;
 }
 
 export interface SKEventData {

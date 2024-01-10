@@ -20,7 +20,7 @@
     "vite": "^5.0.8"
   },
   "dependencies": {
-    "svelte-markdown": "^0.4.1",
-	 "engine": "workspace:../engine"
+    "svelte-hotkeys": "^0.1.1",
+    "svelte-markdown": "^0.4.1"
   }
 }

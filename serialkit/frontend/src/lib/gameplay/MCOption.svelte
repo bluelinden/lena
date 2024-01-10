@@ -3,6 +3,8 @@
 	export let value: string;
 	export let id: string;
 
+	export let selected: boolean;
+
 	import { createEventDispatcher } from "svelte";
 	const dispatch = createEventDispatcher();
 
@@ -10,7 +12,7 @@
 
 <li>
 	<label for={id}><slot>SerialKit: Option empty.</slot></label>
-	<input type="radio" name={group} {id} {value} on:change={
+	<input type="radio" name={group} {id} {value} checked={selected} on:change={
 		() => dispatch("change", {
 			value
 		})

@@ -4,7 +4,7 @@ import { marked } from "marked";
 export class GameStator {
 	constructor(page?: SKPageTypes.SKPageOutput) {
 		if (page && Object.keys(page).length > 0) {
-			this.#currentPage = page;
+			this.currentPage = page;
 		}
 	}
 	#pages: Record<string, SKPageTypes.SKPageOutput> = {};
@@ -85,6 +85,9 @@ export class GameStator {
 	}
 	set currentPage(value: SKPageTypes.SKPageOutput) {
 		this.#currentPage = value;
+		if (value.titleMarker) {
+			this.registerPage(value);
+		}
 		if (this.#onPageChangeCallback) {
 			this.#onPageChangeCallback(value);
 		}
@@ -170,18 +173,22 @@ export class GameStator {
 
 			if (pageOutput) {
 				// what type is pageOutput?
-				if (("id" in pageOutput) && !("titleMarker" in pageOutput)) {
+				if ("id" in pageOutput && !("titleMarker" in pageOutput)) {
 					// page output is a page reference!! yay!
 					const oldPage = this.currentPage;
 					this.currentPage = this.#pages[pageOutput.id];
-					this.currentPage[pageDirection === "next" ? "nextPage" : "prevPage"] = oldPage;
-				} else if (("nonActionReason" in pageOutput)) {
+					this.currentPage[
+						pageDirection === "next" ? "nextPage" : "prevPage"
+					] = oldPage;
+				} else if ("nonActionReason" in pageOutput) {
 					// page output is a page object
 					alert(pageOutput.nonActionReason);
 				} else {
 					const oldPage = this.currentPage;
 					this.currentPage = pageOutput as SKPageTypes.SKPageOutput;
-					this.currentPage[pageDirection === "next" ? "nextPage" : "prevPage"] = oldPage;
+					this.currentPage[
+						pageDirection === "next" ? "nextPage" : "prevPage"
+					] = oldPage;
 				}
 			}
 		}
