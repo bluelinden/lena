@@ -1,4 +1,4 @@
-export declare interface SKPageOutput {
+export declare type SKPageOutput = {
 	on: SKOnEventDefinition;
 	navOptions: {
 		allowNextPage: boolean;
@@ -11,14 +11,25 @@ export declare interface SKPageOutput {
 		string,
 		string | number | boolean | Record<string, boolean>
 	>;
-	prevPage?: SKPageOutput;
-	nextPage?: SKPageOutput;
+	prevPage?: SKPageRef;
+	nextPage?: SKPageRef;
 	reevaluatePageDecisions?: boolean;
 	titleMarker: string;
 	content: string;
 	passed?: boolean;
 	id: string;
 }
+
+export declare type SKDebugMessage = {
+	type: "debug";
+	data: {
+		category: "load" | "registry" | "storage" | "init" | "security" | "ui" | "input" | "meta";
+		message: string;
+		isError: boolean;
+	};
+};
+
+export declare type SKPageFn = () => SKPageOutput;
 
 export interface SKPageRef {
 	id: string;
@@ -35,8 +46,8 @@ export type SKListInputDef = {
 };
 
 export type SKOnEventDefinition = {
-	pageNext?: (ev: SKEventData) => SKPageOutput | SKPageNonActionReason | SKPageRef;
-	pagePrev?: (ev: SKEventData) => SKPageOutput | SKPageNonActionReason | SKPageRef;
+	pageNext?: (ev: SKEventData) => SKPageNonActionReason | SKPageRef;
+	pagePrev?: (ev: SKEventData) => SKPageNonActionReason | SKPageRef;
 	inputChange?: (ev: SKEventData) => SKEventHandlerResponse;
 };
 

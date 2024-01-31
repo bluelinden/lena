@@ -11,6 +11,7 @@
 	const dispatch = createEventDispatcher();
 
 	function changeHandler(e: CustomEvent<{ value: string }>) {
+		value = e.detail.value
 		dispatch( "change", {
 			value: e.detail.value,
 			group
@@ -21,7 +22,7 @@
 {#if isNumbered}
 	<ol>
 		{#each options as option}
-			<McOption id={option.id} value={option.value} {group} selected={option.value === value} on:change={changeHandler}
+			<McOption id={option.id} value={option.value} {group} selected={option.value == value} on:change={changeHandler}
 				>{option.label}</McOption
 			>
 		{/each}

@@ -1,26 +1,31 @@
 {
-  "name": "serialkit-frontend",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "check": "svelte-check --tsconfig ./tsconfig.json"
-  },
-  "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^3.0.1",
-    "@tsconfig/svelte": "^5.0.2",
-    "sass": "^1.69.7",
-    "svelte": "^4.2.8",
-    "svelte-check": "^3.6.2",
-    "tslib": "^2.6.2",
-    "typescript": "^5.3.3",
-    "vite": "^5.0.8"
-  },
-  "dependencies": {
-    "svelte-hotkeys": "^0.1.1",
-    "svelte-markdown": "^0.4.1"
-  }
+	"name": "serialkit-frontend",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"dev": "vite",
+		"build": "vite build",
+		"preview": "vite preview",
+		"check": "svelte-check --tsconfig ./tsconfig.json"
+	},
+	"devDependencies": {
+		"@sveltejs/vite-plugin-svelte": "^3.0.1",
+		"@tsconfig/svelte": "^5.0.2",
+		"autoprefixer": "^10.4.17",
+		"postcss": "^8.4.33",
+		"sass": "^1.69.7",
+		"svelte": "^4.2.9",
+		"svelte-check": "^3.6.2",
+		"tslib": "^2.6.2",
+		"typescript": "^5.3.3",
+		"vite": "^5.0.8"
+	},
+	"browserslist": [
+		"last 7 versions"
+	],
+	"dependencies": {
+		"svelte-hotkeys": "^0.1.1",
+		"svelte-markdown": "^0.4.1"
+	}
 }

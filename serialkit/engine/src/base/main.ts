@@ -2,15 +2,13 @@ import * as SKPageTypes from "./page.types";
 import { marked } from "marked";
 
 export class GameStator {
-	constructor(page?: SKPageTypes.SKPageOutput) {
-		if (page && Object.keys(page).length > 0) {
-			this.currentPage = page;
-		}
-	}
-	#pages: Record<string, SKPageTypes.SKPageOutput> = {};
+	constructor(public showDefaultPage = true, public debug = false) {}
+	#pages: Record<string, SKPageTypes.SKPageFn> = {};
 	#currentPage: SKPageTypes.SKPageOutput = {
 		id: "sk_default",
-		content: `You've initialized SerialKit's base framework, at ${new Date().toLocaleTimeString()}, but no page has been loaded *yet.*`,
+		content: `You've initialized SerialKit's base framework, at ${new Date().toLocaleTimeString()}, but no page has been loaded *yet.*
+		
+This version of SerialKit is designed specifically to be used in the game *Lena.*`,
 		on: {
 			pageNext: () => {
 				return {
@@ -78,20 +76,63 @@ export class GameStator {
 				},
 			],
 		},
-		titleMarker: "SerialKit",
+		titleMarker: "LenaKit",
 	};
 	get currentPage(): SKPageTypes.SKPageOutput {
+		if (!this.showDefaultPage && this.#currentPage.id === "sk_default") {
+			this.#debugMessage({
+				type: "debug",
+				data: {
+					category: "load",
+					isError: false,
+					message: `Skipping default page.`,
+				},
+			});
+			return {
+				id: "sk_blank",
+				content: "",
+				on: {},
+				navOptions: {
+					allowNextPage: false,
+					allowPrevPage: false,
+				},
+				titleMarker: "",
+			};
+		}
 		return this.#currentPage;
 	}
-	set currentPage(value: SKPageTypes.SKPageOutput) {
-		this.#currentPage = value;
-		if (value.titleMarker) {
-			this.registerPage(value);
-		}
+	set currentPage(newPage: SKPageTypes.SKPageOutput) {
+		this.#debugMessage({
+			type: "debug",
+			data: {
+				category: "load",
+				isError: false,
+				message: `Inserting page "${newPage.id}"`,
+			},
+		});
+		this.#currentPage = newPage;
+		// disable SerialKit's built-in automatic registration of pages
+		// if (newPage.titleMarker) {
+		// 	this.registerPage(newPage.id, newPage);
+		// }
 		if (this.#onPageChangeCallback) {
-			this.#onPageChangeCallback(value);
+			this.#debugMessage({
+				type: "debug",
+				data: {
+					category: "load",
+					isError: false,
+					message: `Calling frontend page change callback`,
+				},
+			});
+			this.#onPageChangeCallback(newPage);
 		}
 	}
+
+	callPage = (pageId: string) => {
+		if (this.#pages[pageId]) {
+			this.currentPage = this.#pages[pageId]();
+		}
+	};
 
 	inputValues: Record<
 		string,
@@ -109,20 +150,39 @@ export class GameStator {
 		const oldValue = this.inputValues[group];
 		this.inputValues[group] = value;
 
-		if (this.currentPage.inputValues) {
-			this.currentPage.inputValues[group] = value;
-		} else {
-			this.currentPage.inputValues = {
-				[group]: value,
-			};
-		}
+		this.#debugMessage({
+			type: "debug",
+			data: {
+				category: "input",
+				isError: false,
+				message: `Input change: ${group} = ${value}`,
+			},
+		});
 		if (this.currentPage.on.inputChange) {
+			this.#debugMessage({
+				type: "debug",
+				data: {
+					category: "input",
+					isError: false,
+					message: `Calling input change callback`,
+				},
+			});
 			const response = this.currentPage.on.inputChange({
 				inputValues: this.inputValues,
 				oldValue,
 				event: {
 					type: "inputChange",
 					fieldName: group,
+				},
+			});
+			this.#debugMessage({
+				type: "debug",
+				data: {
+					category: "input",
+					isError: false,
+					message: `Input change callback response: ${JSON.stringify(
+						response
+					)}`,
 				},
 			});
 			if (response.showPrevButton !== undefined) {
@@ -142,26 +202,85 @@ export class GameStator {
 		this.#onPageChangeCallback = fn;
 	};
 
+	#debugCallback: ((message: SKPageTypes.SKDebugMessage) => void) | undefined =
+		undefined;
+
+	onDebugMessage = (fn: (message: SKPageTypes.SKDebugMessage) => void) => {
+		if (this.debug) {
+			this.#debugCallback = fn;
+			this.#debugMessage({
+				type: "debug",
+				data: {
+					category: "meta",
+					isError: false,
+					message: `Initializing debug UI.`,
+				},
+			});
+		}
+	};
+
+	#debugMessage = (message: SKPageTypes.SKDebugMessage) => {
+		if (this.#debugCallback) {
+			this.#debugCallback(message);
+		}
+	};
+
 	#callDirectionalPage = (pageDirection: "next" | "prev") => {
+		this.#debugMessage({
+			type: "debug",
+			data: {
+				message: `------- START PAGE LOAD -------`,
+				isError: false,
+				category: "meta",
+			},
+		});
+		// step one - check if there even is a current page
 		if (!this.currentPage) {
-			alert(
-				"Something really, really weird is happening. There is no current page set. - SerialKit Base Framework"
-			);
+			this.#debugMessage({
+				type: "debug",
+				data: {
+					message: `No current page... What?`,
+					isError: true,
+					category: "load",
+				},
+			});
+			return;
 		}
 		const currentPage = this.currentPage;
+
+		// step two - check if the current page has been evaluated
+
+		// if the current page has already been evaluated and passed, just take the shortcut.
 		if (!currentPage.reevaluatePageDecisions && currentPage.passed) {
+			this.#debugMessage({
+				type: "debug",
+				data: {
+					message: `Skipping page re-evaluation`,
+					isError: false,
+					category: "load",
+				},
+			});
 			switch (pageDirection) {
 				case "next":
 					const nextPage = currentPage.nextPage;
-					if (nextPage) this.currentPage = nextPage;
+					if (nextPage) this.currentPage = this.#pages[nextPage.id]();
 					break;
 				case "prev":
 					const prevPage = currentPage.prevPage;
-					if (prevPage) this.currentPage = prevPage;
+					if (prevPage) this.currentPage = this.#pages[prevPage.id]();
 					break;
 			}
 			return;
 		} else {
+			// step three - check if the current page has a next or previous page.
+			this.#debugMessage({
+				type: "debug",
+				data: {
+					message: `Calling ${pageDirection} page handler`,
+					isError: false,
+					category: "load",
+				},
+			});
 			const pageOutput = this.currentPage?.on[
 				pageDirection === "next" ? "pageNext" : "pagePrev"
 			]?.({
@@ -170,26 +289,128 @@ export class GameStator {
 				},
 				inputValues: currentPage.inputValues ?? {},
 			});
+			this.#debugMessage({
+				type: "debug",
+				data: {
+					message: `Page handler response: ${JSON.stringify(pageOutput)}`,
+					isError: false,
+					category: "load",
+				},
+			});
 
 			if (pageOutput) {
 				// what type is pageOutput?
-				if ("id" in pageOutput && !("titleMarker" in pageOutput)) {
+
+				// step four - check if pageOutput is a page reference
+				if ("id" in pageOutput) {
 					// page output is a page reference!! yay!
-					const oldPage = this.currentPage;
-					this.currentPage = this.#pages[pageOutput.id];
-					this.currentPage[
-						pageDirection === "next" ? "nextPage" : "prevPage"
-					] = oldPage;
+
+					// step five - check if the reference is a dynamic reference to the next or previous page
+					if (pageOutput.id === "$prev" && currentPage.prevPage) {
+						this.#debugMessage({
+							type: "debug",
+							data: {
+								message: `Calling dynamic previous page "${currentPage.prevPage.id}"`,
+								isError: false,
+								category: "load",
+							},
+						});
+						this.currentPage = this.#pages[currentPage.prevPage.id]();
+						this.#debugMessage({
+							type: "debug",
+							data: {
+								message: `Setting next page of page "${currentPage.id}" to "${currentPage.prevPage.id}"`,
+								isError: false,
+								category: "load",
+							},
+						});
+						this.currentPage.nextPage = currentPage;
+						return;
+					} else if (pageOutput.id === "$next" && currentPage.nextPage) {
+						this.#debugMessage({
+							type: "debug",
+							data: {
+								message: `Calling dynamic next page "${currentPage.nextPage.id}"`,
+								isError: false,
+								category: "load",
+							},
+						});
+						this.currentPage = this.#pages[currentPage.nextPage.id]();
+						this.#debugMessage({
+							type: "debug",
+							data: {
+								message: `Setting previous page of page "${currentPage.id}" to "${currentPage.nextPage.id}"`,
+								isError: false,
+								category: "load",
+							},
+						});
+						this.currentPage.prevPage = currentPage;
+						return;
+					}
+
+					// step six - check if the reference is a registered page
+					else if (this.#pages[pageOutput.id]) {
+						this.#debugMessage({
+							type: "debug",
+							data: {
+								message: `Calling registered page "${pageOutput.id}"`,
+								isError: false,
+								category: "load",
+							},
+						});
+						this.currentPage = this.#pages[pageOutput.id]();
+					} else {
+						this.#debugMessage({
+							type: "debug",
+							data: {
+								message: `Page "${pageOutput.id}" not found!`,
+								isError: true,
+								category: "load",
+							},
+						});
+					}
+
+					const lastPageDirection =
+						pageOutput.id === "$prev" ? "nextPage" : "prevPage";
+
+					this.#debugMessage({
+						type: "debug",
+						data: {
+							message: `Setting ${
+								lastPageDirection === "nextPage" ? "next" : "previous"
+							} page of page "${this.currentPage.id}" to "${
+								currentPage.id
+							}".`,
+							isError: false,
+							category: "load",
+						},
+					});
+
+					this.currentPage[lastPageDirection] = {
+						id: currentPage.id,
+					};
 				} else if ("nonActionReason" in pageOutput) {
 					// page output is a page object
 					alert(pageOutput.nonActionReason);
-				} else {
-					const oldPage = this.currentPage;
-					this.currentPage = pageOutput as SKPageTypes.SKPageOutput;
-					this.currentPage[
-						pageDirection === "next" ? "nextPage" : "prevPage"
-					] = oldPage;
 				}
+				// i disabled SerialKit's built in sideeffect-less page navigation to allow for easier saves and loads.
+				// else {
+				// 	const oldPage = this.currentPage;
+				// 	this.currentPage = pageOutput as SKPageTypes.SKPageOutput;
+				// 	this.currentPage[
+				// 		pageDirection === "prev" ? "nextPage" : "prevPage"
+				// 	] = oldPage;
+				// 	oldPage[pageDirection === "prev" ? "nextPage" : "prevPage"] = this.currentPage;
+				// }
+			} else if (pageOutput === undefined) {
+				this.#debugMessage({
+					type: "debug",
+					data: {
+						message: `Page ${this.currentPage.id}'s ${pageDirection} page handler didn't return anything!`,
+						isError: true,
+						category: "load",
+					},
+				});
 			}
 		}
 	};
@@ -202,7 +423,7 @@ export class GameStator {
 		this.#callDirectionalPage("next");
 	};
 
-	registerPage = (page: SKPageTypes.SKPageOutput) => {
-		this.#pages[page.id] = page;
+	registerPage = (id: string, page: SKPageTypes.SKPageFn) => {
+		this.#pages[id] = page;
 	};
 }

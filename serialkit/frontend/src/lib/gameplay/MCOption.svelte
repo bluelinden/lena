@@ -6,17 +6,29 @@
 	export let selected: boolean;
 
 	import { createEventDispatcher } from "svelte";
-	const dispatch = createEventDispatcher();
 
+	const dispatch = createEventDispatcher();
 </script>
 
-<li>
+<!-- class:checked is here because of firefox stupidity and :has not refreshing when it should -->
+<li class:checked={selected}>
 	<label for={id}><slot>SerialKit: Option empty.</slot></label>
-	<input type="radio" name={group} {id} {value} checked={selected} on:change={
-		() => dispatch("change", {
-			value
-		})
-	} />
+
+	<input
+		type="radio"
+		autocomplete="off"
+		name={group}
+		{id}
+		{value}
+		checked={selected}
+		on:change={() => {
+			value = value;
+			selected = selected;
+			dispatch("change", {
+				value,
+			});
+		}}
+	/>
 </li>
 
 <style lang="scss">
@@ -27,7 +39,7 @@
 		margin-left: 2em;
 		color: #009a;
 
-		&:has(input:checked) {
+		&.checked {
 			margin-left: 0;
 			color: #009;
 			&::marker {
