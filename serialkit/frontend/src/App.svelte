@@ -5,8 +5,6 @@
 	import type { GameStator } from "engine/main";
 	import Markdown from "svelte-markdown";
 
-	const debug: boolean = true;
-
 	export let stator: GameStator;
 
 	$: currentPage = stator.currentPage;
