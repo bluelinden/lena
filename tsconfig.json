@@ -20,7 +20,8 @@
 		"paths": {
 			"utils/*": ["./serialkit/utils/src/*"],
 			"frontend/*": ["./serialkit/frontend/src/*"],
-			"engine/*": ["./serialkit/engine/src/*"]
+			"engine/*": ["./serialkit/engine/src/*"],
+			"game/*": ["./game/*"]
 		}
 	},
 	"include": ["serialkit/**/*.ts", "serialkit/**/*.js", "game/**/*.ts", "game/**/*.js", "serialkit/**/*.svelte"],

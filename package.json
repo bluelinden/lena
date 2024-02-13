@@ -10,6 +10,9 @@
     "bun-types": "latest",
     "vite-tsconfig-paths": "^4.2.3"
   },
+  "dependencies": {
+	 "compress-json": "^3.0.0"
+  },
   "peerDependencies": {
     "typescript": "^5.0.0"
   },
@@ -19,7 +22,8 @@
 	 "./frontend": "./serialkit/frontend",
 	 "./utils": "./serialkit/utils",
 	 "./utils/random-choice": "./serialkit/utils/src/random-choice.ts",
-	 "./utils/storage": "./serialkit/utils/src/storage.ts"
+	 "./utils/storage": "./serialkit/utils/src/storage.ts",
+	 "./game/*": "./game/*"
   },
   "workspaces": [
     "serialkit/*"
