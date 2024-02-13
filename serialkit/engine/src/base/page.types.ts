@@ -26,6 +26,7 @@ export declare type SKDebugMessage = {
 		category: "load" | "registry" | "storage" | "init" | "security" | "ui" | "input" | "meta";
 		message: string;
 		isError: boolean;
+		isInternal?: boolean;
 	};
 };
 
@@ -38,10 +39,11 @@ export interface SKPageRef {
 export type SKListInputDef = {
 	group: string;
 	numbered: boolean;
-	content: () => {
+	content: {
 		id: string;
 		value: string;
 		label: string;
+		isSelected?: boolean;
 	}[];
 };
 

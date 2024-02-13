@@ -1,9 +1,15 @@
 import * as SKPageTypes from "./page.types";
 import { marked } from "marked";
+import SKStorage from "../storage";
 
 export class GameStator {
-	constructor(public showDefaultPage = true, public debug = false) {}
+	constructor(public showDefaultPage = false, public debug = false) {
+		SKStorage.onDebugMessage((message, messageArray) => {
+			this.#debugMessage(message);
+		});
+	}
 	#pages: Record<string, SKPageTypes.SKPageFn> = {};
+	#debugMessageArray: SKPageTypes.SKDebugMessage[] = [];
 	#currentPage: SKPageTypes.SKPageOutput = {
 		id: "sk_default",
 		content: `You've initialized SerialKit's base framework, at ${new Date().toLocaleTimeString()}, but no page has been loaded *yet.*
@@ -53,7 +59,7 @@ This version of SerialKit is designed specifically to be used in the game *Lena.
 		inputDef: {
 			group: "SerialKitDefault",
 			numbered: true,
-			content: () => [
+			content: [
 				{
 					id: "opt1",
 					value: "igmo",
@@ -202,10 +208,19 @@ This version of SerialKit is designed specifically to be used in the game *Lena.
 		this.#onPageChangeCallback = fn;
 	};
 
-	#debugCallback: ((message: SKPageTypes.SKDebugMessage) => void) | undefined =
-		undefined;
+	#debugCallback:
+		| ((
+				message: SKPageTypes.SKDebugMessage,
+				messageArray: SKPageTypes.SKDebugMessage[]
+		  ) => void)
+		| undefined = undefined;
 
-	onDebugMessage = (fn: (message: SKPageTypes.SKDebugMessage) => void) => {
+	onDebugMessage = (
+		fn: (
+			message: SKPageTypes.SKDebugMessage,
+			messageArray: SKPageTypes.SKDebugMessage[]
+		) => void
+	) => {
 		if (this.debug) {
 			this.#debugCallback = fn;
 			this.#debugMessage({
@@ -214,15 +229,21 @@ This version of SerialKit is designed specifically to be used in the game *Lena.
 					category: "meta",
 					isError: false,
 					message: `Initializing debug UI.`,
+					isInternal: true,
 				},
 			});
 		}
 	};
 
 	#debugMessage = (message: SKPageTypes.SKDebugMessage) => {
+		this.#debugMessageArray.push(message);
 		if (this.#debugCallback) {
-			this.#debugCallback(message);
+			this.#debugCallback(message, this.#debugMessageArray);
 		}
+	};
+
+	externalDebugMessage = (message: SKPageTypes.SKDebugMessage) => {
+		this.#debugMessage(message);
 	};
 
 	#callDirectionalPage = (pageDirection: "next" | "prev") => {
@@ -276,7 +297,9 @@ This version of SerialKit is designed specifically to be used in the game *Lena.
 			this.#debugMessage({
 				type: "debug",
 				data: {
-					message: `Calling ${pageDirection} page handler`,
+					message: `Calling ${pageDirection} page handler with input values: ${JSON.stringify(
+						this.inputValues
+					)}`,
 					isError: false,
 					category: "load",
 				},
@@ -287,7 +310,7 @@ This version of SerialKit is designed specifically to be used in the game *Lena.
 				event: {
 					type: "nextPage",
 				},
-				inputValues: currentPage.inputValues ?? {},
+				inputValues: this.inputValues ?? {},
 			});
 			this.#debugMessage({
 				type: "debug",
@@ -319,7 +342,7 @@ This version of SerialKit is designed specifically to be used in the game *Lena.
 						this.#debugMessage({
 							type: "debug",
 							data: {
-								message: `Setting next page of page "${currentPage.id}" to "${currentPage.prevPage.id}"`,
+								message: `Setting next page of page "${this.currentPage.id}" to "${currentPage.id}"` /* two similar variables mean different things */,
 								isError: false,
 								category: "load",
 							},
@@ -368,6 +391,7 @@ This version of SerialKit is designed specifically to be used in the game *Lena.
 								category: "load",
 							},
 						});
+						return;
 					}
 
 					const lastPageDirection =
