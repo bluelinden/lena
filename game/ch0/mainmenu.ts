@@ -1,6 +1,8 @@
 import type * as SKPageTypes from "engine/base/page.types";
-import storage from "utils/storage";
+import SKStorage from "engine/storage";
 import { randomChoice } from "utils/random-choice";
+
+const storage = SKStorage.open("gamedata", true);
 
 export const initiation: SKPageTypes.SKPageFn = () => {
 	return {
@@ -27,36 +29,37 @@ If you're ready, click "Next" to begin your journey.
 };
 
 export const welcome: SKPageTypes.SKPageFn = () => {
+	const hasStartedGame = storage.get("has-started-game");
 	return {
 		id: "welcome",
-		get content() {
-			return `Similar to choose-your-own-adventure books, this game lets you choose how your character, Lena, acts. Simply pick the action you think she should take, and click the "next" button to turn the page.
+		content: `Similar to choose-your-own-adventure books, this game lets you choose how your character, Lena, acts. Simply pick the action you think she should take, and click the "next" button to turn the page.
 
-Just be warned: you can't always make the same choice twice.`;
-		},
+${
+	hasStartedGame
+		? `Are you ready to play again? You say, `
+		: `Just be warned: you can't always make the same choice twice. To that, you say,`
+}`,
 
 		inputDef: {
 			group: "welcome",
 			numbered: true,
-			content: () => {
-				return [
-					{
-						id: "play-game-welcome-btn",
-						value: "play",
-						label: "Play the game",
-					},
-					{
-						id: "settings-welcome-btn",
-						value: "settings",
-						label: "Adjust player settings",
-					},
-					{
-						id: "credits-welcome-btn",
-						value: "credits",
-						label: "View credits",
-					},
-				];
-			},
+			content: [
+				{
+					id: "play-game-welcome-btn",
+					value: "play",
+					label: hasStartedGame ? `"I'm ready. Let's play."` : `"Fine by me, I'm ready."`,
+				},
+				{
+					id: "settings-welcome-btn",
+					value: "settings",
+					label: `"I'd like to adjust my player settings."`,
+				},
+				{
+					id: "credits-welcome-btn",
+					value: "credits",
+					label: `"Who made this game?"`,
+				},
+			],
 		},
 
 		on: {
@@ -82,6 +85,25 @@ Just be warned: you can't always make the same choice twice.`;
 					default:
 						return {
 							showNextButton: false,
+						};
+				}
+			},
+			pageNext: (ev: SKPageTypes.SKEventData) => {
+				switch (ev.inputValues["welcome"]) {
+					case "play":
+						storage.set("has-started-game", true);
+						storage.commit();
+						return {
+							id: "ch1-wakeup-action",
+						} as SKPageTypes.SKPageRef;
+					case "settings":
+						return {
+							id: "player-settings",
+						};
+					default:
+						return {
+							nonActionReason:
+								"You've picked an option that doesn't allow for a next page.",
 						};
 				}
 			},
