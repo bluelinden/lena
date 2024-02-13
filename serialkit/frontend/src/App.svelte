@@ -4,12 +4,14 @@
 	import type * as SKTypes from "engine/page.types";
 	import type { GameStator } from "engine/main";
 	import Markdown from "svelte-markdown";
+	import { onMount } from "svelte";
+	import {string as mkCurlyQuotes} from "curlyquotes";
 
 	export let stator: GameStator;
 
 	$: currentPage = stator.currentPage;
 
-	$: pageContent = currentPage.content;
+	$: pageContent = mkCurlyQuotes(currentPage.content);
 	$: pageTitle = currentPage.titleMarker;
 	$: showBackButton = currentPage.navOptions.allowPrevPage;
 	$: showNextButton = currentPage.navOptions.allowNextPage;
@@ -24,12 +26,17 @@
 
 	$: inputValues = stator.inputValues as Record<string, string>;
 	function loadDebug() {
+		if (stator.debug !== true && import.meta.env.DEV !== true) return;
 		console.log("Loading debug view...");
 		import("./lib/debug/ui.svelte").then((mod) => (DebugView = mod.default));
 	}
 	stator.onPageChange((newPage) => {
 		currentPage = newPage;
 	});
+	if (stator.debug === true && import.meta.env.DEV === true)
+		onMount(() => {
+			loadDebug();
+		});
 </script>
 
 <svelte:head>
@@ -46,8 +53,8 @@
 			<McGroup
 				group={multiChoiceQuestion.group}
 				isNumbered={multiChoiceQuestion.numbered}
-				options={multiChoiceQuestion.content() ?? []}
-				value={inputValues[multiChoiceQuestion.group ?? ""] ?? ""}
+				options={multiChoiceQuestion.content ?? []}
+				value={inputValues[multiChoiceQuestion.group] ?? ""}
 				on:change={(e) => {
 					stator.callInputChange(e.detail.group, e.detail.value);
 					currentPage = currentPage;
@@ -72,14 +79,6 @@
 	/>
 </main>
 {#if stator.debug === true && import.meta.env.DEV === true}
-	{#if !isShowingDebugView}
-		<button
-			on:click={() => {
-				loadDebug();
-				isShowingDebugView = true;
-			}}>Open debug view</button
-		>
-	{/if}
 	<svelte:component this={DebugView} {stator} />
 {/if}
 

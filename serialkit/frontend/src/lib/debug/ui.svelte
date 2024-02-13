@@ -12,8 +12,8 @@
 	$: currentDebugMessages = [] as SKTypes.SKDebugMessage[];
 
 	onMount(() => {
-		stator.onDebugMessage((message) => {
-			currentDebugMessages = [...currentDebugMessages, message];
+		stator.onDebugMessage((message, messageArray) => {
+			currentDebugMessages = messageArray;
 		});
 	});
 
@@ -42,7 +42,7 @@
 		{/if}
 
 		{#each currentDebugMessages as message}
-			<tr class:error={message.data.isError} class={message.data.category}>
+			<tr class:error={message.data.isError} class={message.data.category} class:internal={message.data.isInternal}>
 				<td>{message.data.category}</td>
 				<td>{message.data.message}</td>
 			</tr>
@@ -77,6 +77,9 @@
 		&.registry {
 			color: green;
 		}
+		&.storage {
+			color: deeppink;
+		}
 		&.error {
 			color: red;
 		}
@@ -90,7 +93,11 @@
 			color: darkslateblue;
 		}
 		&.meta {
-			color: gray;
+			color: black;
+		}
+
+		&.internal {
+			opacity: 0.4;
 		}
 	}
 

@@ -5,14 +5,24 @@
 
 	export let selected: boolean;
 
-	import { createEventDispatcher } from "svelte";
+	export let label: string;
 
+	import { createEventDispatcher } from "svelte";
+	import { string as cqString } from "curlyquotes";
+
+	let labelCurly = cqString(label);
+	
 	const dispatch = createEventDispatcher();
+
+	if (selected) {
+		dispatch("change", {
+			value,
+		});
+	}
 </script>
 
-<!-- class:checked is here because of firefox stupidity and :has not refreshing when it should -->
 <li class:checked={selected}>
-	<label for={id}><slot>SerialKit: Option empty.</slot></label>
+	<label for={id}>{labelCurly}</label>
 
 	<input
 		type="radio"
@@ -50,6 +60,8 @@
 
 	input {
 		clip-path: polygon(0 0);
+		position: absolute;
+		top: 0;
 	}
 	label {
 		@include tools.stdfont;

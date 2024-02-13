@@ -24,6 +24,11 @@
 		display: flex;
 		flex-direction: row;
 		justify-content: space-between;
+		position: sticky;
+		bottom: 32px;
+		background: #fff4;
+		backdrop-filter: blur(30px);
+		border-radius: 24px;
 		// center items
 
 		align-items: center;
