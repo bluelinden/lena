@@ -2,8 +2,9 @@ import { compress, decompress } from "compress-json";
 import type * as SKTypes from "engine/base/page.types";
 
 export default class SKStorage {
-	#values: Map<string, any> = new Map();
+	#values: Map<string, any>;
 	nextCommitTime: number = -1;
+	#separator = ":/:DO=NOT=MODIFY:/:";
 
 	constructor(
 		public readonly storageKey = "gamedata",
@@ -22,6 +23,7 @@ export default class SKStorage {
 				isInternal: true,
 			},
 		});
+		this.#values = new Map();
 	}
 
 	#debugCallback?: (message: SKTypes.SKDebugMessage) => void;
@@ -37,6 +39,7 @@ export default class SKStorage {
 		// disable autocommit
 		// this.nextCommitTime = Date.now() + 499;
 		// setTimeout(() => this.checkIfShouldCommit(), 500);
+		return this;
 	}
 
 	// check if should commit by seeing if the last commit time is less than 500ms ago. if it is, exit. if it isn't, commit.
@@ -93,7 +96,8 @@ export default class SKStorage {
 
 			hashPre.then((hash) => {
 				final =
-					"OBF:" +
+					"OBF" +
+					this.#separator +
 					btoa(
 						encodeURIComponent(
 							JSON.stringify(
@@ -119,8 +123,8 @@ export default class SKStorage {
 				localStorage.setItem(this.storageKey, final);
 			});
 		} else {
-			final = JSON.stringify(this.#values);
-			localStorage.setItem(this.storageKey, "RAW:" + final);
+			final = JSON.stringify(Object.fromEntries(this.#values));
+			localStorage.setItem(this.storageKey, "RAW" + this.#separator + final);
 		}
 	}
 
@@ -135,77 +139,106 @@ export default class SKStorage {
 			},
 		});
 		try {
-		const value = localStorage.getItem(this.storageKey);
-		if (value) {
-			const [type, data] = value.split(":");
-			if (type === "OBF") {
-				// decode the stored data
-				const decoded = decodeURIComponent(atob(data));
-				// decompress the data
-				const decompressed = decompress(JSON.parse(decoded));
-				// extract the hash value
-				const hashValue = decompressed.hh;
-				// decode the base64 encoded data
-				const base64Decoded = atob(decompressed.ve);
-				// decode the URI component
-				const decodedURI = decodeURIComponent(base64Decoded);
-				// calculate the hash
-				const hash = crypto.subtle.digest(
-					"SHA-256",
-					new TextEncoder().encode(decodedURI)
-				);
-				// compare the calculated hash with the hash from stored data
-				hash.then((calculatedHash) => {
-					const calculatedHashStr = Array.from(
-						new Uint8Array(calculatedHash)
-					)
-						.map((b) => b.toString(16).padStart(2, "0"))
-						.join("");
-					if (calculatedHashStr === hashValue) {
-						this.#debugMessage({
-							type: "debug",
-							data: {
-								category: "storage",
-								isError: false,
-								message: `Hash valid for LocalStorage ns ${this.storageKey}`,
-								isInternal: true,
-							}
-						})
-						const valuesAsCompressedObject = JSON.parse(decodedURI);
-						const valuesAsObject = decompress(valuesAsCompressedObject);
+			const value = localStorage.getItem(this.storageKey);
+			if (value) {
+				const [type, data] = value.split(this.#separator);
+				if (type === "OBF") {
+					// decode the stored data
+					const decoded = decodeURIComponent(atob(data));
+					// decompress the data
+					const decompressed = decompress(JSON.parse(decoded));
+					// extract the hash value
+					const hashValue = decompressed.hh;
+					// decode the base64 encoded data
+					const base64Decoded = atob(decompressed.ve);
+					// decode the URI component
+					const decodedURI = decodeURIComponent(base64Decoded);
+					// calculate the hash
+					const hash = crypto.subtle.digest(
+						"SHA-256",
+						new TextEncoder().encode(decodedURI)
+					);
+					// compare the calculated hash with the hash from stored data
+					hash.then((calculatedHash) => {
+						const calculatedHashStr = Array.from(
+							new Uint8Array(calculatedHash)
+						)
+							.map((b) => b.toString(16).padStart(2, "0"))
+							.join("");
+						if (calculatedHashStr === hashValue) {
+							this.#debugMessage({
+								type: "debug",
+								data: {
+									category: "storage",
+									isError: false,
+									message: `Hash valid for LocalStorage ns ${this.storageKey}`,
+									isInternal: true,
+								},
+							});
+							const valuesAsCompressedObject = JSON.parse(decodedURI);
+							const valuesAsObject = decompress(
+								valuesAsCompressedObject
+							);
 
-						// zero fucking clue what i'm doing here
-						delete valuesAsObject["0"];
-						delete valuesAsObject["1"];
-						this.#values = new Map(Object.entries(valuesAsObject));
-						this.#debugMessage({
-							type: "debug",
-							data: {
-								category: "storage",
-								isError: false,
-								message: `Loaded LocalStorage for ns ${
-									this.storageKey
-								}, with values ${JSON.stringify(valuesAsObject)}`,
-								isInternal: true,
-							},
-						});
-					} else {
-						this.#debugMessage({
-							type: "debug",
-							data: {
-								category: "storage",
-								isError: true,
-								message: `Hash invalid for LocalStorage ns ${this.storageKey}`,
-								isInternal: true,
-							},
-						});
-					}
-				});
-			} else if (type === "RAW") {
-				this.#values = JSON.parse(data);
+							// zero fucking clue what i'm doing here
+							delete valuesAsObject["0"];
+							delete valuesAsObject["1"];
+							this.#values = new Map(Object.entries(valuesAsObject));
+							this.#debugMessage({
+								type: "debug",
+								data: {
+									category: "storage",
+									isError: false,
+									message: `Loaded LocalStorage for ns ${
+										this.storageKey
+									}, with values ${JSON.stringify(valuesAsObject)}`,
+									isInternal: true,
+								},
+							});
+						} else {
+							this.#debugMessage({
+								type: "debug",
+								data: {
+									category: "storage",
+									isError: true,
+									message: `Hash invalid for LocalStorage ns ${this.storageKey}`,
+									isInternal: true,
+								},
+							});
+						}
+					});
+				} else if (type === "RAW") {
+					const valuesAsObject = JSON.parse(data);
+					this.#values = new Map(Object.entries(valuesAsObject));
+					this.#debugMessage({
+						type: "debug",
+						data: {
+							category: "storage",
+							isError: false,
+							message: `Loaded LocalStorage for ns ${
+								this.storageKey
+							}, with values ${JSON.stringify(valuesAsObject)}`,
+							isInternal: true,
+						},
+					});
+				}
 			}
-		}} catch (e) {
-			
+		} catch (e) {
+			console.error(e);
 		}
+	}
+
+	clear() {
+		this.#debugMessage({
+			type: "debug",
+			data: {
+				category: "storage",
+				isError: false,
+				message: `Clearing LocalStorage for ns ${this.storageKey}`,
+				isInternal: true,
+			},
+		});
+		localStorage.removeItem(this.storageKey);
+		this.#values.clear();
 	}
 }

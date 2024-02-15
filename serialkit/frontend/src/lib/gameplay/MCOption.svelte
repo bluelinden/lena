@@ -9,21 +9,16 @@
 
 	import { createEventDispatcher } from "svelte";
 	import { string as cqString } from "curlyquotes";
+	import SvelteMarkdown from "svelte-markdown";
 
-	let labelCurly = cqString(label);
-	
+	$: labelCurly = cqString(label);
+
+	let labelElem: HTMLLabelElement;
+
 	const dispatch = createEventDispatcher();
-
-	if (selected) {
-		dispatch("change", {
-			value,
-		});
-	}
 </script>
 
 <li class:checked={selected}>
-	<label for={id}>{labelCurly}</label>
-
 	<input
 		type="radio"
 		autocomplete="off"
@@ -37,8 +32,16 @@
 			dispatch("change", {
 				value,
 			});
+			
+		}}
+		on:click={() => {
+			labelElem.scrollIntoView({ behavior: "instant" });
 		}}
 	/>
+
+	<label for={id} bind:this={labelElem}
+		><SvelteMarkdown isInline={true} source={labelCurly} />
+	</label>
 </li>
 
 <style lang="scss">
@@ -77,11 +80,16 @@
 		text-decoration-style: solid;
 		text-shadow: none;
 
-		&:hover,
-		&:has(+ input:checked) {
+		&:hover {
 			text-underline-offset: 0.2em;
 			text-decoration-thickness: 0.15em;
 			text-shadow: #0095 0 0 5px;
 		}
+	}
+
+	.checked label, .checked label * {
+		text-underline-offset: 0.2em;
+		text-decoration-thickness: 0.15em;
+		text-shadow: #0095 0 0 5px;
 	}
 </style>

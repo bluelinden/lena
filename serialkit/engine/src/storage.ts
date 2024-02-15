@@ -29,7 +29,7 @@ export class StorageCatalog {
 		}
 	}
 
-	open(namespace: string, compression: boolean = false) {
+	open(namespace: string, compression: boolean = false, autoLoad = true) {
 		this.#debugMessage({
 			type: "debug",
 			data: {
@@ -41,9 +41,7 @@ export class StorageCatalog {
 		if (!this.#storageInstances.has(namespace)) {
 			// check if namespace localstorage key has RAW in front of it
 			const value = localStorage.getItem(namespace);
-			let isAlreadyCompressed = false;
 			if (value && value.startsWith("OBF:")) {
-				isAlreadyCompressed = true;
 				this.#debugMessage({
 					type: "debug",
 					data: {
@@ -64,7 +62,23 @@ export class StorageCatalog {
 			}
 			const shouldCompress = compression;
 
-			const storage = new SKBasicStorage(namespace, shouldCompress, import.meta.env.DEV ? this.#debugMessage.bind(this) : undefined);
+			const storage = new SKBasicStorage(
+				namespace,
+				shouldCompress,
+				import.meta.env.DEV ? this.#debugMessage.bind(this) : undefined
+			);
+
+			if (autoLoad) {
+				storage.load();
+				this.#debugMessage({
+					type: "debug",
+					data: {
+						category: "storage",
+						isError: false,
+						message: `Storage for ns ${namespace} automatically loaded`,
+					},
+				});
+			}
 
 			this.#storageInstances.set(namespace, storage);
 		}
@@ -77,8 +91,6 @@ export class StorageCatalog {
 				this.#debugProxyHandler()
 			);
 		}
-
-		openedNamespace.load();
 
 		return openedNamespace;
 	}
@@ -164,6 +176,18 @@ export class StorageCatalog {
 								});
 								return target.commit.apply(target, []);
 							};
+						case "clear":
+							return function () {
+								thisStorageCatalog.#debugMessage({
+									type: "debug",
+									data: {
+										category: "storage",
+										isError: false,
+										message: `Manually clearing ns ${target.storageKey} from local storage`,
+									},
+								});
+								return target.clear.apply(target, []);
+							};
 						default:
 							return target[prop as keyof SKBasicStorage];
 					}
@@ -172,6 +196,20 @@ export class StorageCatalog {
 				}
 			},
 		};
+	}
+
+	clearAll() {
+		this.#debugMessage({
+			type: "debug",
+			data: {
+				category: "storage",
+				isError: false,
+				message: `Clearing all LocalStorage`,
+			},
+		});
+		this.#storageInstances.forEach((storage) => {
+			storage.clear();
+		});
 	}
 }
 

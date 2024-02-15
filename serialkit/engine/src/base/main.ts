@@ -1,11 +1,33 @@
 import * as SKPageTypes from "./page.types";
 import { marked } from "marked";
 import SKStorage from "../storage";
+import storage from "../storage";
 
 export class GameStator {
-	constructor(public showDefaultPage = false, public debug = false) {
+	constructor(
+		public gameName = "game",
+		public showDefaultPage = false,
+		public debug = false,
+		private persistent = false
+	) {
+		this.#debugMessage({
+			type: "debug",
+			data: {
+				category: "load",
+				isError: false,
+				message: `Initializing SerialKit Game Stator.`,
+			},
+		});
 		SKStorage.onDebugMessage((message, messageArray) => {
 			this.#debugMessage(message);
+		});
+		this.#debugMessage({
+			type: "debug",
+			data: {
+				category: "load",
+				isError: false,
+				message: `Initialized SerialKit Game Stator.`,
+			},
 		});
 	}
 	#pages: Record<string, SKPageTypes.SKPageFn> = {};
@@ -120,7 +142,40 @@ This version of SerialKit is designed specifically to be used in the game *Lena.
 		// disable SerialKit's built-in automatic registration of pages
 		// if (newPage.titleMarker) {
 		// 	this.registerPage(newPage.id, newPage);
-		// }
+		// }last-viewed-page
+		if (this.persistent && !newPage.transient) {
+			const storage = SKStorage.open(`sk-${this.gameName}`, true);
+			storage.set("sk-most-recent-page", newPage.id);
+			storage.commit();
+		}
+
+		if (newPage.inputDef?.persistent) {
+			this.#debugMessage({
+				type: "debug",
+				data: {
+					category: "input",
+					isError: false,
+					message: `Checking storage for persistent input group ${newPage.inputDef.group}`,
+				},
+			});
+			const inputValue = SKStorage.open(`sk-${this.gameName}-input`).get(
+				newPage.inputDef.group
+			);
+			if (inputValue) {
+				this.inputValues.set(newPage.inputDef.group, inputValue);
+				this.callInputChange(newPage.inputDef.group, inputValue);
+
+				this.#debugMessage({
+					type: "debug",
+					data: {
+						category: "input",
+						isError: false,
+						message: `Found and set persistent input group ${newPage.inputDef.group}, with value ${inputValue}`,
+					},
+				});
+			}
+		}
+
 		if (this.#onPageChangeCallback) {
 			this.#debugMessage({
 				type: "debug",
@@ -134,16 +189,23 @@ This version of SerialKit is designed specifically to be used in the game *Lena.
 		}
 	}
 
-	callPage = (pageId: string) => {
+	callPage = (pageId: string, usePersistence = true) => {
 		if (this.#pages[pageId]) {
+			const priorPersistentValue = this.persistent;
+			if (!usePersistence) {
+				this.persistent = false;
+			}
 			this.currentPage = this.#pages[pageId]();
+			if (!usePersistence) {
+				this.persistent = priorPersistentValue;
+			}
 		}
 	};
 
-	inputValues: Record<
+	inputValues: Map<
 		string,
 		string | number | boolean | Record<string, boolean>
-	> = {};
+	> = new Map();
 
 	showPageValidationAlert = (text: string) => {
 		alert(text);
@@ -153,8 +215,8 @@ This version of SerialKit is designed specifically to be used in the game *Lena.
 		group: string,
 		value: string | number | boolean | Record<string, boolean>
 	) => {
-		const oldValue = this.inputValues[group];
-		this.inputValues[group] = value;
+		const oldValue = this.inputValues.get(group);
+		this.inputValues.set(group, value);
 
 		this.#debugMessage({
 			type: "debug",
@@ -174,7 +236,7 @@ This version of SerialKit is designed specifically to be used in the game *Lena.
 				},
 			});
 			const response = this.currentPage.on.inputChange({
-				inputValues: this.inputValues,
+				inputValues: Object.fromEntries(this.inputValues),
 				oldValue,
 				event: {
 					type: "inputChange",
@@ -197,6 +259,25 @@ This version of SerialKit is designed specifically to be used in the game *Lena.
 			if (response.showNextButton !== undefined) {
 				this.currentPage.navOptions.allowNextPage = response.showNextButton;
 			}
+		}
+		if (this.currentPage.inputDef?.persistent) {
+			let inputStorage = storage.open(
+				`sk-${this.gameName}-input`,
+				false,
+				true
+			);
+
+			inputStorage.set(group, value);
+			inputStorage.commit();
+
+			this.#debugMessage({
+				type: "debug",
+				data: {
+					category: "input",
+					isError: false,
+					message: `Persisted input change: ${group} = ${value}`,
+				},
+			})
 		}
 	};
 
@@ -272,170 +353,149 @@ This version of SerialKit is designed specifically to be used in the game *Lena.
 		// step two - check if the current page has been evaluated
 
 		// if the current page has already been evaluated and passed, just take the shortcut.
-		if (!currentPage.reevaluatePageDecisions && currentPage.passed) {
-			this.#debugMessage({
-				type: "debug",
-				data: {
-					message: `Skipping page re-evaluation`,
-					isError: false,
-					category: "load",
-				},
-			});
-			switch (pageDirection) {
-				case "next":
-					const nextPage = currentPage.nextPage;
-					if (nextPage) this.currentPage = this.#pages[nextPage.id]();
-					break;
-				case "prev":
-					const prevPage = currentPage.prevPage;
-					if (prevPage) this.currentPage = this.#pages[prevPage.id]();
-					break;
-			}
-			return;
-		} else {
-			// step three - check if the current page has a next or previous page.
-			this.#debugMessage({
-				type: "debug",
-				data: {
-					message: `Calling ${pageDirection} page handler with input values: ${JSON.stringify(
-						this.inputValues
-					)}`,
-					isError: false,
-					category: "load",
-				},
-			});
-			const pageOutput = this.currentPage?.on[
-				pageDirection === "next" ? "pageNext" : "pagePrev"
-			]?.({
-				event: {
-					type: "nextPage",
-				},
-				inputValues: this.inputValues ?? {},
-			});
-			this.#debugMessage({
-				type: "debug",
-				data: {
-					message: `Page handler response: ${JSON.stringify(pageOutput)}`,
-					isError: false,
-					category: "load",
-				},
-			});
 
-			if (pageOutput) {
-				// what type is pageOutput?
+		// step three - check if the current page has a next or previous page.
+		this.#debugMessage({
+			type: "debug",
+			data: {
+				message: `Calling ${pageDirection} page handler with input values: ${JSON.stringify(
+					Object.fromEntries(this.inputValues)
+				)}`,
+				isError: false,
+				category: "load",
+			},
+		});
+		const pageOutput = this.currentPage?.on[
+			pageDirection === "next" ? "pageNext" : "pagePrev"
+		]?.({
+			event: {
+				type: "nextPage",
+			},
+			inputValues: Object.fromEntries(this.inputValues) ?? {},
+		});
+		this.#debugMessage({
+			type: "debug",
+			data: {
+				message: `Page handler response: ${JSON.stringify(pageOutput)}`,
+				isError: false,
+				category: "load",
+			},
+		});
 
-				// step four - check if pageOutput is a page reference
-				if ("id" in pageOutput) {
-					// page output is a page reference!! yay!
+		if (pageOutput) {
+			// what type is pageOutput?
 
-					// step five - check if the reference is a dynamic reference to the next or previous page
-					if (pageOutput.id === "$prev" && currentPage.prevPage) {
-						this.#debugMessage({
-							type: "debug",
-							data: {
-								message: `Calling dynamic previous page "${currentPage.prevPage.id}"`,
-								isError: false,
-								category: "load",
-							},
-						});
-						this.currentPage = this.#pages[currentPage.prevPage.id]();
-						this.#debugMessage({
-							type: "debug",
-							data: {
-								message: `Setting next page of page "${this.currentPage.id}" to "${currentPage.id}"` /* two similar variables mean different things */,
-								isError: false,
-								category: "load",
-							},
-						});
-						this.currentPage.nextPage = currentPage;
-						return;
-					} else if (pageOutput.id === "$next" && currentPage.nextPage) {
-						this.#debugMessage({
-							type: "debug",
-							data: {
-								message: `Calling dynamic next page "${currentPage.nextPage.id}"`,
-								isError: false,
-								category: "load",
-							},
-						});
-						this.currentPage = this.#pages[currentPage.nextPage.id]();
-						this.#debugMessage({
-							type: "debug",
-							data: {
-								message: `Setting previous page of page "${currentPage.id}" to "${currentPage.nextPage.id}"`,
-								isError: false,
-								category: "load",
-							},
-						});
-						this.currentPage.prevPage = currentPage;
-						return;
-					}
+			// step four - check if pageOutput is a page reference
+			if ("id" in pageOutput) {
+				// page output is a page reference!! yay!
 
-					// step six - check if the reference is a registered page
-					else if (this.#pages[pageOutput.id]) {
-						this.#debugMessage({
-							type: "debug",
-							data: {
-								message: `Calling registered page "${pageOutput.id}"`,
-								isError: false,
-								category: "load",
-							},
-						});
-						this.currentPage = this.#pages[pageOutput.id]();
-					} else {
-						this.#debugMessage({
-							type: "debug",
-							data: {
-								message: `Page "${pageOutput.id}" not found!`,
-								isError: true,
-								category: "load",
-							},
-						});
-						return;
-					}
-
-					const lastPageDirection =
-						pageOutput.id === "$prev" ? "nextPage" : "prevPage";
-
+				// step five - check if the reference is a dynamic reference to the next or previous page
+				if (pageOutput.id === "$prev" && currentPage.prevPage) {
 					this.#debugMessage({
 						type: "debug",
 						data: {
-							message: `Setting ${
-								lastPageDirection === "nextPage" ? "next" : "previous"
-							} page of page "${this.currentPage.id}" to "${
-								currentPage.id
-							}".`,
+							message: `Calling dynamic previous page "${currentPage.prevPage.id}"`,
 							isError: false,
 							category: "load",
 						},
 					});
-
-					this.currentPage[lastPageDirection] = {
-						id: currentPage.id,
-					};
-				} else if ("nonActionReason" in pageOutput) {
-					// page output is a page object
-					alert(pageOutput.nonActionReason);
+					this.currentPage = this.#pages[currentPage.prevPage.id]();
+					this.#debugMessage({
+						type: "debug",
+						data: {
+							message: `Setting next page of page "${this.currentPage.id}" to "${currentPage.id}"` /* two similar variables mean different things */,
+							isError: false,
+							category: "load",
+						},
+					});
+					this.currentPage.nextPage = currentPage;
+					return;
+				} else if (pageOutput.id === "$next" && currentPage.nextPage) {
+					this.#debugMessage({
+						type: "debug",
+						data: {
+							message: `Calling dynamic next page "${currentPage.nextPage.id}"`,
+							isError: false,
+							category: "load",
+						},
+					});
+					this.currentPage = this.#pages[currentPage.nextPage.id]();
+					this.#debugMessage({
+						type: "debug",
+						data: {
+							message: `Setting previous page of page "${currentPage.id}" to "${currentPage.nextPage.id}"`,
+							isError: false,
+							category: "load",
+						},
+					});
+					this.currentPage.prevPage = currentPage;
+					return;
 				}
-				// i disabled SerialKit's built in sideeffect-less page navigation to allow for easier saves and loads.
-				// else {
-				// 	const oldPage = this.currentPage;
-				// 	this.currentPage = pageOutput as SKPageTypes.SKPageOutput;
-				// 	this.currentPage[
-				// 		pageDirection === "prev" ? "nextPage" : "prevPage"
-				// 	] = oldPage;
-				// 	oldPage[pageDirection === "prev" ? "nextPage" : "prevPage"] = this.currentPage;
-				// }
-			} else if (pageOutput === undefined) {
+
+				// step six - check if the reference is a registered page
+				else if (this.#pages[pageOutput.id]) {
+					this.#debugMessage({
+						type: "debug",
+						data: {
+							message: `Calling registered page "${pageOutput.id}"`,
+							isError: false,
+							category: "load",
+						},
+					});
+					this.currentPage = this.#pages[pageOutput.id]();
+				} else {
+					this.#debugMessage({
+						type: "debug",
+						data: {
+							message: `Page "${pageOutput.id}" not found!`,
+							isError: true,
+							category: "load",
+						},
+					});
+					return;
+				}
+
+				const lastPageDirection =
+					pageOutput.id === "$prev" ? "nextPage" : "prevPage";
+
 				this.#debugMessage({
 					type: "debug",
 					data: {
-						message: `Page ${this.currentPage.id}'s ${pageDirection} page handler didn't return anything!`,
-						isError: true,
+						message: `Setting ${
+							lastPageDirection === "nextPage" ? "next" : "previous"
+						} page of page "${this.currentPage.id}" to "${
+							currentPage.id
+						}".`,
+						isError: false,
 						category: "load",
 					},
 				});
+
+				this.currentPage[lastPageDirection] = {
+					id: currentPage.id,
+				};
+			} else if ("nonActionReason" in pageOutput) {
+				// page output is a page object
+				alert(pageOutput.nonActionReason);
 			}
+			// i disabled SerialKit's built in sideeffect-less page navigation to allow for easier saves and loads.
+			// else {
+			// 	const oldPage = this.currentPage;
+			// 	this.currentPage = pageOutput as SKPageTypes.SKPageOutput;
+			// 	this.currentPage[
+			// 		pageDirection === "prev" ? "nextPage" : "prevPage"
+			// 	] = oldPage;
+			// 	oldPage[pageDirection === "prev" ? "nextPage" : "prevPage"] = this.currentPage;
+			// }
+		} else if (pageOutput === undefined) {
+			this.#debugMessage({
+				type: "debug",
+				data: {
+					message: `Page ${this.currentPage.id}'s ${pageDirection} page handler didn't return anything!`,
+					isError: true,
+					category: "load",
+				},
+			});
 		}
 	};
 

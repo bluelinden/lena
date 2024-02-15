@@ -17,7 +17,9 @@ export declare type SKPageOutput = {
 	titleMarker: string;
 	content: string;
 	passed?: boolean;
+	transient?: boolean;
 	id: string;
+
 }
 
 export declare type SKDebugMessage = {
@@ -38,12 +40,12 @@ export interface SKPageRef {
 
 export type SKListInputDef = {
 	group: string;
+	persistent?: boolean;
 	numbered: boolean;
 	content: {
 		id: string;
 		value: string;
 		label: string;
-		isSelected?: boolean;
 	}[];
 };
 

@@ -1,18 +1,57 @@
 import type * as SKPageTypes from "engine/base/page.types";
 import SKStorage from "engine/storage";
 import { randomChoice } from "utils/random-choice";
+import { SKIntroVariables } from "game/ch0/intro";
 
-const storage = SKStorage.open("gamedata", true);
+const storage = SKStorage.open("gamedata", false);
+const tmpStorage = SKStorage.open("tmpdata", false, false);
+
+enum SKMenuVariables {
+	numKids = "initiation-num-kids",
+}
 
 export const initiation: SKPageTypes.SKPageFn = () => {
+	let numKids: number = storage.get(SKMenuVariables.numKids);
+	if (!numKids) {
+		numKids = Math.round(Math.random() * 3000);
+		storage.set(SKMenuVariables.numKids, numKids);
+		storage.commit();
+	}
+
+	let numMurderers = Math.ceil(numKids * 0.0005);
+
+	let kidsReferenceTerm = "";
+	switch (numMurderers) {
+		case 1:
+			kidsReferenceTerm = "";
+			break;
+		case 2:
+			kidsReferenceTerm = "both ";
+			break;
+		case 3:
+			kidsReferenceTerm = "all ";
+	}
+
+	let numFederalAgentsHurt = Math.ceil(numKids * 0.0005) * 5;
+
+	let justStartedGame = tmpStorage.get(SKIntroVariables.justStartedGame);
+
 	return {
 		id: "initiation",
-
-		content: `*Lena* is fun. But it's not for anyone under 13. I can't stop you from playing if you're too young, but I will warn you that this game is intended to mess with you and make you doubt your mental abilities. If you can't handle that, please close this tab.
-		
-If you're ready, click "Next" to begin your journey.
-
-*Developed, designed and written by blue linden.*`,
+		transient: true,
+		content: `${
+			justStartedGame ? "Okay, so" : "It's me, the *narrator!*"
+		} I'd just like to let you know that this book, while technically appropriate for kids, is not intended for them or really anyone under 12 years old. This book is classified as *psychological horror* and it won't do good things to the psyches of children. About half of the kids I tested this book on ended up in jail for assault and battery, along with a few first-degree murders. They're in the minority, though. With a sample size of ${numKids.toLocaleString()} kids, and an assumed initial murderous percentage of them being around 0.05%, the murderous child rate only increased from ${Math.ceil(
+			numKids * 0.0005
+		).toLocaleString()} in every ${numKids.toLocaleString()} kids to ${(
+			Math.round(numKids / 1.7) + 1
+		).toLocaleString()} in ${Math.round(
+			numKids - numMurderers
+		).toLocaleString()}. We had to remove ${numMurderers === 1 ? "that" : "those"} ${Math.ceil(
+			numMurderers
+		).toLocaleString()} ${numMurderers === 1 ? "kid" : "kids"} from the sample so the feds could handle them. I think they only managed to kill ${(
+			Math.ceil(numMurderers) * 5
+		).toLocaleString()} agents before they were ${kidsReferenceTerm}contained.`,
 		navOptions: {
 			allowNextPage: true,
 			allowPrevPage: false,
@@ -32,7 +71,8 @@ export const welcome: SKPageTypes.SKPageFn = () => {
 	const hasStartedGame = storage.get("has-started-game");
 	return {
 		id: "welcome",
-		content: `Similar to choose-your-own-adventure books, this game lets you choose how your character, Lena, acts. Simply pick the action you think she should take, and click the "next" button to turn the page.
+		transient: true,
+		content: `This book lets you choose how your character, Lena, acts. Simply pick the action you think she should take, and click the "next" button to turn the page.
 
 ${
 	hasStartedGame
@@ -43,11 +83,14 @@ ${
 		inputDef: {
 			group: "welcome",
 			numbered: true,
+			persistent: true,
 			content: [
 				{
 					id: "play-game-welcome-btn",
 					value: "play",
-					label: hasStartedGame ? `"I'm ready. Let's play."` : `"Fine by me, I'm ready."`,
+					label: hasStartedGame
+						? `"I'm ready. Let's play."`
+						: `"Fine by me, I'm ready."`,
 				},
 				{
 					id: "settings-welcome-btn",
@@ -93,8 +136,16 @@ ${
 					case "play":
 						storage.set("has-started-game", true);
 						storage.commit();
+						let mostRecentPage = SKStorage.open("sk-Lena").get(
+							"sk-most-recent-page"
+						);
+						if (mostRecentPage) {
+							return {
+								id: mostRecentPage,
+							};
+						}
 						return {
-							id: "ch1-wakeup-action",
+							id: "ch1-first-alarm",
 						} as SKPageTypes.SKPageRef;
 					case "settings":
 						return {

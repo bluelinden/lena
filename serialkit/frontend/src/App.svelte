@@ -1,11 +1,15 @@
 <script lang="ts">
 	import BottomNav from "./lib/gameplay/BottomNav.svelte";
-	import McGroup from "./lib/gameplay/McGroup.svelte";
+	import McGroup from "./lib/gameplay/MCGroup.svelte";
 	import type * as SKTypes from "engine/page.types";
 	import type { GameStator } from "engine/main";
 	import Markdown from "svelte-markdown";
-	import { onMount } from "svelte";
-	import {string as mkCurlyQuotes} from "curlyquotes";
+	import { onMount, onDestroy, tick } from "svelte";
+	import { writable } from "svelte/store";
+	import { string as mkCurlyQuotes } from "curlyquotes";
+	import SKStorage from "../../engine/src/storage";
+	import { scrollPos } from "./lib/stores";
+	import MdView from "./lib/gameplay/MdView.svelte";
 
 	export let stator: GameStator;
 
@@ -22,12 +26,14 @@
 		| undefined;
 
 	let DebugView: any = null;
-	let isShowingDebugView = false;
+	$: showDebug = false as boolean | undefined;
 
-	$: inputValues = stator.inputValues as Record<string, string>;
+	$: inputValues = Object.fromEntries(stator.inputValues) as Record<
+		string,
+		string
+	>;
 	function loadDebug() {
 		if (stator.debug !== true && import.meta.env.DEV !== true) return;
-		console.log("Loading debug view...");
 		import("./lib/debug/ui.svelte").then((mod) => (DebugView = mod.default));
 	}
 	stator.onPageChange((newPage) => {
@@ -37,18 +43,31 @@
 		onMount(() => {
 			loadDebug();
 		});
+
+	onMount(() => {
+		const delta = 250;
+		let lastKeypressTimeLogin = 0;
+		window.addEventListener("keydown", (commandSummoner) => {
+			if (commandSummoner.key === "q") {
+				let thisKeypressTimeLogin = Date.now();
+				if (thisKeypressTimeLogin - lastKeypressTimeLogin <= delta) {
+					showDebug = !showDebug;
+					thisKeypressTimeLogin = 0;
+				}
+				lastKeypressTimeLogin = thisKeypressTimeLogin;
+			}
+		});
+	});
 </script>
 
 <svelte:head>
-	<title>{currentPage.titleMarker}</title>
+	<title>{stator.gameName} - {currentPage.titleMarker}</title>
 </svelte:head>
 
 <main>
 	<article>
-		<!-- keyed due to a bug in svelte-markdown -->
-		{#key pageContent}
-			<Markdown source={pageContent} />
-		{/key}
+		<MdView {pageContent} />
+
 		{#if multiChoiceQuestion && multiChoiceQuestion.group}
 			<McGroup
 				group={multiChoiceQuestion.group}
@@ -79,7 +98,12 @@
 	/>
 </main>
 {#if stator.debug === true && import.meta.env.DEV === true}
-	<svelte:component this={DebugView} {stator} />
+	<svelte:component
+		this={DebugView}
+		{stator}
+		storageCatalog={SKStorage}
+		{showDebug}
+	/>
 {/if}
 
 <style lang="scss">

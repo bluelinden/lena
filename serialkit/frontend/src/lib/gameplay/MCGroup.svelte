@@ -1,22 +1,23 @@
 <script lang="ts">
-	import type { SKPersistentInputData } from "engine/page.types";
 	import McOption from "./MCOption.svelte";
 
 	export let group: string;
-	export let options: { id: string; value: string; label: string; isSelected?: boolean }[];
+	export let options: {
+		id: string;
+		value: string;
+		label: string;
+	}[];
+
 	export let isNumbered: boolean = true;
 	export let value: string;
 
-	import { createEventDispatcher } from "svelte";
+	import { createEventDispatcher, onMount } from "svelte";
 	const dispatch = createEventDispatcher();
 
 	function changeHandler(e: CustomEvent<{ value: string }>) {
 		value = e.detail.value;
-		options.forEach((option) => {
-			option.isSelected = option.value === value;
-		})
 		dispatch("change", {
-			value: e.detail.value,
+			value,
 			group,
 		});
 	}
@@ -29,7 +30,7 @@
 				id={option.id}
 				value={option.value}
 				{group}
-				selected={option.isSelected ?? false}
+				selected={option.value === value}
 				on:change={changeHandler}
 				label={option.label}
 			></McOption>
